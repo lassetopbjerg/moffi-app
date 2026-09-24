@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MØFFI APP</title>
+<style>
+:root{
+  --bg:#faf7f2; --card:#fff; --ink:#2b2320; --sub:#8a7f76; --line:#ece5dc;
+  --sleep:#7c93c9; --sleepBg:#eef1fa; --food:#e0956b; --foodBg:#fbf0e8;
+  --accent:#2b2320;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1815; --card:#242019; --ink:#f1ebe4; --sub:#a89a8d; --line:#3a332b;
+    --sleepBg:#262b3a; --foodBg:#3a2c22;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1815; --card:#242019; --ink:#f1ebe4; --sub:#a89a8d; --line:#3a332b;
+  --sleepBg:#262b3a; --foodBg:#3a2c22;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+*{box-sizing:border-box;}
+body{
+  margin:0; height:100%; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:480px; margin:0 auto; padding:16px 16px 130px;}
+h1{font-size:19px; margin:8px 0 14px; letter-spacing:.2px;}
+.brand{display:flex; align-items:center; gap:10px; margin:4px 0 16px;}
+.brand-name{font-size:20px; font-weight:800; letter-spacing:.5px;}
+.tabs{display:flex; gap:8px; margin-bottom:16px;}
+.tab{
+  flex:1; text-align:center; padding:10px 0; border-radius:12px; border:1px solid var(--line);
+  background:var(--card); color:var(--sub); font-size:14px; font-weight:600; cursor:pointer;
+}
+.tab.active.sleep{background:var(--sleepBg); color:var(--sleep); border-color:var(--sleep);}
+.tab.active.food{background:var(--foodBg); color:var(--food); border-color:var(--food);}
+.tab.active.stats{background:var(--ink); color:var(--bg); border-color:var(--ink);}
+.chart-title{font-size:13px; font-weight:600; margin:4px 0 10px;}
+.chart{overflow-x:auto; position:relative;}
+.chart-tip{
+  position:absolute; background:var(--ink); color:var(--bg); font-size:11px; font-weight:600;
+  padding:5px 9px; border-radius:8px; pointer-events:none; white-space:nowrap; z-index:10;
+  transform:translate(-50%,-115%); opacity:0; transition:opacity .1s;
+}
+.chart-tip.show{opacity:1;}
+.legend{display:flex; gap:14px; font-size:12px; color:var(--sub); margin-top:6px;}
+.legend span{display:inline-flex; align-items:center; gap:5px;}
+.legend i{width:8px; height:8px; border-radius:50%; display:inline-block;}
+.card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px;}
+.big-btn{
+  width:100%; padding:16px; border-radius:14px; border:none; font-size:16px; font-weight:700;
+  color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.big-btn.sleep{background:var(--sleep);}
+.big-btn.food{background:var(--food);}
+.big-btn.stop{background:#c96a5a;}
+.timer{text-align:center; font-size:13px; color:var(--sub); margin-top:8px;}
+.quickrow{display:flex; gap:8px; margin-top:12px;}
+.qbtn{
+  flex:1; padding:10px 4px; border-radius:10px; border:1px solid var(--line); background:transparent;
+  color:var(--ink); font-size:13px; cursor:pointer;
+}
+.qbtn.sel{border-color:var(--food); background:var(--foodBg); color:var(--food); font-weight:600;}
+.field{margin-top:10px;}
+.field label{font-size:12px; color:var(--sub); display:block; margin-bottom:4px;}
+.field input,.field textarea{
+  width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line);
+  background:var(--bg); color:var(--ink); font-size:14px;
+}
+.save-btn{margin-top:12px; width:100%; padding:11px; border-radius:10px; border:none; background:var(--ink); color:var(--bg); font-weight:600; font-size:14px; cursor:pointer;}
+.section-title{font-size:13px; color:var(--sub); margin:18px 0 8px; text-transform:uppercase; letter-spacing:.5px;}
+.entry{display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);}
+.entry:last-child{border-bottom:none;}
+.dot{width:8px; height:8px; border-radius:50%; margin-top:6px; flex-shrink:0;}
+.dot.sleep{background:var(--sleep);}
+.dot.food{background:var(--food);}
+.dot.pyt{background:#d6455a;}
+.quote-bar{
+  position:fixed; left:0; right:0; bottom:0; background:var(--bg);
+  border-top:1px solid var(--line); padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));
+  z-index:20;
+}
+.quote-inner{max-width:480px; margin:0 auto; text-align:center;}
+.quote-text{font-size:13px; font-style:italic; color:var(--ink); line-height:1.45;}
+.quote-source{font-size:10px; color:var(--sub); margin-top:5px;}
+button:disabled{opacity:.45; cursor:not-allowed;}
+.entry-main{flex:1; font-size:14px;}
+.entry-sub{font-size:12px; color:var(--sub); margin-top:2px;}
+.del{background:none; border:none; color:var(--sub); font-size:18px; cursor:pointer; padding:0 4px;}
+.edit-icon{background:none; border:none; color:var(--sub); font-size:14px; cursor:pointer; padding:0 4px;}
+.entry-actions{display:flex; gap:2px;}
+.edit-row .field{margin-top:8px;}
+.edit-actions{display:flex; gap:8px; margin-top:10px;}
+.edit-actions button{flex:1; padding:8px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--ink); font-size:13px; cursor:pointer;}
+.edit-actions button.primary{background:var(--ink); color:var(--bg); border:none; font-weight:600;}
+.empty{text-align:center; color:var(--sub); font-size:13px; padding:20px 0;}
+.summary{display:flex; gap:10px; margin-bottom:14px;}
+#sinceSummary .stat .n{color:var(--ink);}
+#sinceSummary .stat{border-style:dashed;}
+.stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; text-align:center;}
+.stat .n{font-size:20px; font-weight:700;}
+.stat .l{font-size:11px; color:var(--sub); margin-top:2px;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <svg width="42" height="42" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g>
+        <!-- petals -->
+        <g fill="#f4c430">
+          <ellipse cx="50" cy="10" rx="10" ry="16"/>
+          <ellipse cx="50" cy="10" rx="10" ry="16" transform="rotate(30 50 50)"/>
+          <ellipse cx="50" cy="10" rx="10" ry="16" transform="rotate(60 50 50)"/>
+          <ellipse cx="50" cy="10" rx="10" ry="16" transform="rotate(90 50 50)"/>
+          <ellipse cx="50" cy="10" rx="10" ry="16" transform="rotate(120 50 50)"/>
+          <ellipse cx="50" cy="10" rx="10" ry="16" transform="rotate(150 50 50)"/>
+          <ellipse cx="50" cy="10" rx="10" ry="16" transform="rotate(180 50 50)"/>
+          <ellipse cx="50" cy="10" rx="10" ry="16" transform="rotate(210 50 50)"/>
+          <ellipse cx="50" cy="10" rx="10" ry="16" transform="rotate(240 50 50)"/>
+          <ellipse cx="50" cy="10" rx="10" ry="16" transform="rotate(270 50 50)"/>
+          <ellipse cx="50" cy="10" rx="10" ry="16" transform="rotate(300 50 50)"/>
+          <ellipse cx="50" cy="10" rx="10" ry="16" transform="rotate(330 50 50)"/>
+        </g>
+        <!-- flower center -->
+        <circle cx="50" cy="50" r="26" fill="#7a4a1e"/>
+        <!-- pig face peeking out -->
+        <ellipse cx="38" cy="42" rx="7" ry="8" fill="#f7b6c2"/>
+        <ellipse cx="62" cy="42" rx="7" ry="8" fill="#f7b6c2"/>
+        <ellipse cx="38" cy="43" rx="3.4" ry="4" fill="#e8909f"/>
+        <ellipse cx="62" cy="43" rx="3.4" ry="4" fill="#e8909f"/>
+        <circle cx="50" cy="54" r="20" fill="#fbc4d0"/>
+        <circle cx="42" cy="49" r="2.6" fill="#3a2a20"/>
+        <circle cx="58" cy="49" r="2.6" fill="#3a2a20"/>
+        <ellipse cx="50" cy="60" rx="9" ry="7" fill="#f39fb0"/>
+        <ellipse cx="46" cy="60" rx="1.8" ry="2.4" fill="#c76a7f"/>
+        <ellipse cx="54" cy="60" rx="1.8" ry="2.4" fill="#c76a7f"/>
+      </g>
+    </svg>
+    <span class="brand-name">MØFFI APP</span>
+  </div>
+
+  <div id="syncStatus" style="font-size:11px; color:var(--sub); text-align:center; margin:-8px 0 12px;"></div>
+  <div class="summary" id="summary"></div>
+  <div class="summary" id="sinceSummary"></div>
+
+  <div class="tabs">
+    <div class="tab sleep" id="tabSleep" onclick="setTab('sleep')">😴 Søvn</div>
+    <div class="tab food" id="tabFood" onclick="setTab('food')">🍼 Mad</div>
+    <div class="tab stats" id="tabStats" onclick="setTab('stats')">📊 Statistik</div>
+  </div>
+
+  <div id="sleepPanel" class="card" style="display:none">
+    <button class="big-btn sleep" id="sleepBtn" onclick="toggleSleep()">Start lur</button>
+    <div class="timer" id="sleepTimer"></div>
+  </div>
+
+  <div id="foodPanel" class="card" style="display:none">
+    <div class="quickrow" id="foodTypeRow">
+      <button class="qbtn" data-t="Bottle" onclick="selectFoodType('Bottle')">🍼 Flaske</button>
+      <button class="qbtn" data-t="Solid" onclick="selectFoodType('Solid')">🥣 Fast føde</button>
+    </div>
+    <div class="field"><label>Tidspunkt</label><input id="foodTime" type="datetime-local"></div>
+    <div class="field"><label>Mængde (ml/g, valgfri)</label><input id="foodAmount" type="text" placeholder="fx 120ml"></div>
+    <div class="field"><label>Note (valgfri)</label><input id="foodNote" type="text" placeholder="fx sur i det"></div>
+    <button class="save-btn" onclick="logFood()">Log måltid</button>
+  </div>
+
+  <div id="statsPanel" style="display:none">
+    <div class="card">
+      <div class="chart-title">Denne uge</div>
+      <div class="chart" id="weekTimeline"><div id="weekSvgWrap"></div><div class="chart-tip" id="chartTip"></div></div>
+      <div id="weekCounts"></div>
+    </div>
+  </div>
+
+  <div class="section-title">Seneste</div>
+  <div class="card" id="history"><div class="empty">Indlæser…</div></div>
+</div>
+
+<div class="quote-bar">
+  <div class="quote-inner">
+    <div class="quote-text" id="quoteText"></div>
+    <div class="quote-source" id="quoteSource"></div>
+  </div>
+</div>
+
+<script>
+let currentTab='sleep', selectedFoodType='Bottle', sleepStart=null, sleepTimerInt=null;
+let entriesCache=[];
+let editingId=null;
+const FOOD_LABELS = {Bottle:'Flaske', Solid:'Fast føde'};
+
+function isoToLocalInput(iso){
+  if(!iso) return '';
+  const d=new Date(iso);
+  d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  return d.toISOString().slice(0,16);
+}
+
+function setTab(t){
+  currentTab=t;
+  document.getElementById('tabSleep').classList.toggle('active',t==='sleep');
+  document.getElementById('tabFood').classList.toggle('active',t==='food');
+  document.getElementById('tabStats').classList.toggle('active',t==='stats');
+  document.getElementById('sleepPanel').style.display = t==='sleep'?'block':'none';
+  document.getElementById('foodPanel').style.display = t==='food'?'block':'none';
+  document.getElementById('statsPanel').style.display = t==='stats'?'block':'none';
+  document.querySelector('.section-title').style.display = t==='stats'?'none':'block';
+  document.getElementById('history').style.display = t==='stats'?'none':'block';
+  if(t==='stats') renderStats();
+}
+function selectFoodType(t){
+  selectedFoodType=t;
+  document.querySelectorAll('#foodTypeRow .qbtn').forEach(b=>b.classList.toggle('sel', b.dataset.t===t));
+}
+function nowLocalInput(){
+  const d=new Date();
+  d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  return d.toISOString().slice(0,16);
+}
+document.getElementById('foodTime').value = nowLocalInput();
+
+selectFoodType('Bottle');
+setTab('sleep');
+
+function fmtTime(iso){
+  const d=new Date(iso);
+  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false});
+}
+function fmtDur(ms){
+  const m=Math.round(ms/60000);
+  if(m<60) return m+'min';
+  return Math.floor(m/60)+'t '+(m%60)+'min';
+}
+function isToday(iso){
+  const d=new Date(iso), n=new Date();
+  return d.toDateString()===n.toDateString();
+}
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC38gwVch7CtSrhD5H9xGdKZL0hdnc7Uws",
+  authDomain: "moffi-app.firebaseapp.com",
+  databaseURL: "https://moffi-app-default-rtdb.firebaseio.com",
+  projectId: "moffi-app",
+  storageBucket: "moffi-app.firebasestorage.app",
+  messagingSenderId: "974558887632",
+  appId: "1:974558887632:web:ca4d862f22528db57e68d5"
+};
+firebase.initializeApp(firebaseConfig);
+const fbDb = firebase.database();
+const entriesRef = fbDb.ref('entries');
+
+async function init(){
+  entriesRef.orderByChild('createdAt').limitToLast(300).on('value', snap=>{
+    const arr=[];
+    snap.forEach(child=>{ arr.push({id:child.key, ...child.val()}); });
+    arr.reverse(); // most recent first
+    entriesCache = arr;
+    document.getElementById('syncStatus').textContent = '● synkroniseret';
+    render();
+  }, err=>{
+    document.getElementById('history').innerHTML='<div class="empty">Kunne ikke oprette forbindelse — tjek din internetforbindelse.</div>';
+    document.getElementById('syncStatus').textContent = '○ offline';
+  });
+}
+
+const QUOTES = [
+  {text:"Everything that irritates us about others can lead us to an understanding of ourselves.", author:"C.G. Jung", source:"Memories, Dreams, Reflections (1961), p. 247"},
+  {text:"How can I be substantial if I do not cast a shadow?", author:"C.G. Jung", source:"Aion, CW 9ii (1951), p. 14"},
+  {text:"Who looks outside, dreams; who looks inside, awakes.", author:"C.G. Jung", source:"Letter to Fanny Bowditch, 22 Oct 1916"},
+  {text:"We cannot change anything unless we accept it. Condemnation does not liberate; it oppresses.", author:"C.G. Jung", source:"Modern Man in Search of a Soul (1933), pp. 234–235"},
+  {text:"In each of us there is another whom we do not know.", author:"C.G. Jung", source:"New Paths in Psychology, CW 7 (1912)"},
+  {text:"Meaninglessness inhibits fullness of life and is therefore equivalent to illness.", author:"C.G. Jung", source:"Memories, Dreams, Reflections (1961), p. 340"},
+  {text:"There is no such thing as a baby, there is a baby and someone.", author:"D.W. Winnicott", source:"The Theory of the Parent-Infant Relationship (1960)"},
+  {text:"The shoe that fits one person pinches another.", author:"C.G. Jung", source:"Modern Man in Search of a Soul (1933), pp. 60–61"}
+];
+
+function renderQuote(){
+  const now = new Date();
+  const start = new Date(now.getFullYear(),0,0);
+  const doy = Math.floor((now-start)/86400000);
+  const q = QUOTES[doy % QUOTES.length];
+  document.getElementById('quoteText').textContent = '"'+q.text+'"';
+  document.getElementById('quoteSource').textContent = '— '+q.author+', '+q.source;
+}
+
+function render(){
+  renderHistory();
+  renderSummary();
+  renderSince();
+  renderSleepButton();
+  if(currentTab==='stats') renderStats();
+}
+
+function renderSleepButton(){
+  const open = entriesCache.find(e=>e.type==='sleep' && !e.end);
+  const btn=document.getElementById('sleepBtn');
+  clearInterval(sleepTimerInt);
+  if(open){
+    sleepStart = open.start;
+    btn.textContent='Afslut lur';
+    btn.className='big-btn stop';
+    const tick=()=>{
+      document.getElementById('sleepTimer').textContent='Sovet i '+fmtDur(Date.now()-new Date(sleepStart).getTime());
+    };
+    tick();
+    sleepTimerInt=setInterval(tick,30000);
+  } else {
+    btn.textContent='Start lur';
+    btn.className='big-btn sleep';
+    document.getElementById('sleepTimer').textContent='';
+  }
+}
+
+async function toggleSleep(){
+  const open = entriesCache.find(e=>e.type==='sleep' && !e.end);
+  try{
+    if(open){
+      await entriesRef.child(open.id).update({end:new Date().toISOString()});
+    } else {
+      await entriesRef.push({type:'sleep', start:new Date().toISOString(), end:null, createdAt:Date.now()});
+    }
+  }catch(e){ alert('Kunne ikke gemme — tjek din forbindelse.'); }
+}
+
+async function logFood(){
+  const amount=document.getElementById('foodAmount').value.trim();
+  const note=document.getElementById('foodNote').value.trim();
+  const timeInput=document.getElementById('foodTime').value;
+  const time = timeInput ? new Date(timeInput).toISOString() : new Date().toISOString();
+  try{
+    await entriesRef.push({
+      type:'food', foodType:selectedFoodType, amount, note,
+      time, createdAt:Date.now()
+    });
+    document.getElementById('foodAmount').value='';
+    document.getElementById('foodNote').value='';
+    document.getElementById('foodTime').value = nowLocalInput();
+  }catch(e){ alert('Kunne ikke gemme — tjek din forbindelse.'); }
+}
+
+async function delEntry(id){
+  try{ await entriesRef.child(id).remove(); }
+  catch(e){ alert('Kunne ikke slette — tjek din forbindelse.'); }
+}
+
+function editEntry(id){ editingId=id; renderHistory(); }
+function cancelEdit(){ editingId=null; renderHistory(); }
+
+async function saveEdit(id, type){
+  try{
+    if(type==='sleep'){
+      const startVal=document.getElementById('editStart-'+id).value;
+      const endVal=document.getElementById('editEnd-'+id).value;
+      if(!startVal){ alert('Starttidspunkt er påkrævet.'); return; }
+      await entriesRef.child(id).update({
+        start: new Date(startVal).toISOString(),
+        end: endVal ? new Date(endVal).toISOString() : null
+      });
+    } else if(type==='food'){
+      const timeVal=document.getElementById('editTime-'+id).value;
+      if(!timeVal){ alert('Tidspunkt er påkrævet.'); return; }
+      await entriesRef.child(id).update({ time: new Date(timeVal).toISOString() });
+    }
+    editingId=null;
+  }catch(e){ alert('Kunne ikke gemme — tjek din forbindelse.'); }
+}
+
+function renderHistory(){
+  const el=document.getElementById('history');
+  if(!entriesCache.length){ el.innerHTML='<div class="empty">Ingen registreringer endnu.</div>'; return; }
+  el.innerHTML = entriesCache.slice(0,60).map(e=>{
+    if(e.id===editingId && (e.type==='sleep' || e.type==='food')){
+      if(e.type==='sleep'){
+        return `<div class="entry edit-row"><div class="entry-main" style="width:100%">
+          <div class="field"><label>Start</label><input type="datetime-local" id="editStart-${e.id}" value="${isoToLocalInput(e.start)}"></div>
+          <div class="field"><label>Slut (lad stå tomt hvis stadig sover)</label><input type="datetime-local" id="editEnd-${e.id}" value="${isoToLocalInput(e.end)}"></div>
+          <div class="edit-actions">
+            <button class="primary" onclick="saveEdit('${e.id}','sleep')">Gem</button>
+            <button onclick="cancelEdit()">Annullér</button>
+          </div>
+        </div></div>`;
+      } else {
+        return `<div class="entry edit-row"><div class="entry-main" style="width:100%">
+          <div class="field"><label>Tidspunkt</label><input type="datetime-local" id="editTime-${e.id}" value="${isoToLocalInput(e.time)}"></div>
+          <div class="edit-actions">
+            <button class="primary" onclick="saveEdit('${e.id}','food')">Gem</button>
+            <button onclick="cancelEdit()">Annullér</button>
+          </div>
+        </div></div>`;
+      }
+    }
+    let main, sub;
+    if(e.type==='sleep'){
+      main = e.end ? `Sov i ${fmtDur(new Date(e.end)-new Date(e.start))}` : 'Sover…';
+      sub = fmtTime(e.start) + (e.end? ' – '+fmtTime(e.end):'');
+    } else if(e.type==='pyt'){
+      main = 'PYT';
+      sub = fmtTime(e.time);
+    } else {
+      main = `${FOOD_LABELS[e.foodType]||e.foodType||'Måltid'}${e.amount? ' · '+e.amount:''}`;
+      sub = fmtTime(e.time) + (e.note? ' · '+e.note:'');
+    }
+    const editBtn = (e.type==='sleep'||e.type==='food') ? `<button class="edit-icon" onclick="editEntry('${e.id}')">✎</button>` : '';
+    return `<div class="entry">
+      <div class="dot ${e.type}"></div>
+      <div class="entry-main">${main}<div class="entry-sub">${sub}</div></div>
+      <div class="entry-actions">${editBtn}<button class="del" onclick="delEntry('${e.id}')">×</button></div>
+    </div>`;
+  }).join('');
+}
+
+function renderSummary(){
+  const todaySleepMs = entriesCache
+    .filter(e=>e.type==='sleep' && e.end && isToday(e.start))
+    .reduce((s,e)=>s+(new Date(e.end)-new Date(e.start)),0);
+  const todayFeeds = entriesCache.filter(e=>e.type==='food' && isToday(e.time)).length;
+  document.getElementById('summary').innerHTML = `
+    <div class="stat"><div class="n">${fmtDur(todaySleepMs)||'0min'}</div><div class="l">Søvn i dag</div></div>
+    <div class="stat"><div class="n">${todayFeeds}</div><div class="l">Måltider i dag</div></div>
+  `;
+}
+
+function dayKey(iso){ return new Date(iso).toISOString().slice(0,10); }
+function dayLabel(key){
+  const d=new Date(key+'T12:00:00');
+  return d.toLocaleDateString('da-DK', {weekday:'short'});
+}
+
+function lastNDays(n){
+  const days=[];
+  const now=new Date();
+  for(let i=n-1;i>=0;i--){
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    days.push(d.toISOString().slice(0,10));
+  }
+  return days;
+}
+
+function clock12(h){
+  const hh = Math.floor(h)%24;
+  return String(hh).padStart(2,'0');
+}
+function fmtClockIso(iso){
+  return new Date(iso).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false});
+}
+function showChartTip(evt, text){
+  const tip=document.getElementById('chartTip');
+  const wrap=document.getElementById('weekTimeline');
+  const rect=wrap.getBoundingClientRect();
+  const evtRect=evt.target.getBoundingClientRect();
+  tip.textContent=text;
+  tip.style.left=(evtRect.left-rect.left+evtRect.width/2)+'px';
+  tip.style.top=(evtRect.top-rect.top)+'px';
+  tip.classList.add('show');
+  clearTimeout(window._tipTimer);
+  window._tipTimer=setTimeout(()=>tip.classList.remove('show'), 2200);
+}
+
+function currentWeekDays(){
+  const now = new Date();
+  const dow = now.getDay();
+  const diffToMonday = (dow===0 ? -6 : 1-dow);
+  const monday = new Date(now); monday.setDate(now.getDate()+diffToMonday);
+  const days=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(monday); d.setDate(monday.getDate()+i);
+    days.push(d.toISOString().slice(0,10));
+  }
+  return days;
+}
+
+function renderStats(){
+  const days = currentWeekDays();
+  const dayIndex = {}; days.forEach((d,i)=>dayIndex[d]=i);
+  const colW=40, gap=6, leftPad=30, chartH=240;
+  const totalW = leftPad + days.length*(colW+gap);
+
+  function hourOf(iso){ const d=new Date(iso); return d.getHours()+d.getMinutes()/60; }
+  function yOf(h){ return (h/24)*chartH; }
+
+  let svg='';
+  for(let h=0; h<=24; h+=3){
+    const y=yOf(h);
+    const major = h%6===0;
+    svg += `<line x1="${leftPad}" y1="${y}" x2="${totalW}" y2="${y}" stroke="var(--line)" stroke-width="1" stroke-dasharray="${major?'0':'2,3'}" opacity="${major?1:0.5}"/>`;
+    if(major) svg += `<text x="${leftPad-6}" y="${y+3}" text-anchor="end" font-size="9" fill="var(--sub)">${clock12(h)}</text>`;
+  }
+
+  const napCounts={}, feedCounts={};
+  days.forEach(d=>{napCounts[d]=0; feedCounts[d]=0;});
+
+  entriesCache.forEach(e=>{
+    if(e.type==='sleep' && e.end){
+      const startKey = new Date(e.start).toISOString().slice(0,10);
+      const endKey = new Date(e.end).toISOString().slice(0,10);
+      const tipText = `${fmtClockIso(e.start)} – ${fmtClockIso(e.end)}`;
+      if(startKey in dayIndex) napCounts[startKey]++;
+      if(startKey===endKey && startKey in dayIndex){
+        const x = leftPad + dayIndex[startKey]*(colW+gap);
+        const y1=yOf(hourOf(e.start)), y2=yOf(hourOf(e.end));
+        svg += `<rect x="${x}" y="${Math.min(y1,y2)}" width="${colW}" height="${Math.max(Math.abs(y2-y1),4)}" rx="4" fill="var(--sleep)" onclick="showChartTip(event,'${tipText}')"/>`;
+      } else {
+        if(startKey in dayIndex){
+          const x=leftPad+dayIndex[startKey]*(colW+gap);
+          const y1=yOf(hourOf(e.start));
+          svg += `<rect x="${x}" y="${y1}" width="${colW}" height="${Math.max(chartH-y1,4)}" rx="4" fill="var(--sleep)" onclick="showChartTip(event,'${tipText}')"/>`;
+        }
+        if(endKey in dayIndex){
+          const x=leftPad+dayIndex[endKey]*(colW+gap);
+          const y2=yOf(hourOf(e.end));
+          svg += `<rect x="${x}" y="0" width="${colW}" height="${Math.max(y2,4)}" rx="4" fill="var(--sleep)" onclick="showChartTip(event,'${tipText}')"/>`;
+        }
+      }
+    } else if(e.type==='food'){
+      const key = new Date(e.time).toISOString().slice(0,10);
+      if(key in dayIndex){
+        feedCounts[key]++;
+        const x = leftPad + dayIndex[key]*(colW+gap) + colW/2;
+        const y = yOf(hourOf(e.time));
+        const tipText = `${FOOD_LABELS[e.foodType]||e.foodType||'Måltid'} · ${fmtClockIso(e.time)}`;
+        svg += `<circle cx="${x}" cy="${y}" r="5" fill="var(--food)" stroke="var(--card)" stroke-width="1.5" onclick="showChartTip(event,'${tipText}')"/>`;
+      }
+    }
+  });
+
+  days.forEach((d,i)=>{
+    const x = leftPad + i*(colW+gap) + colW/2;
+    svg += `<text x="${x}" y="${chartH+14}" text-anchor="middle" font-size="10" fill="var(--sub)">${dayLabel(d)}</text>`;
+  });
+
+  document.getElementById('weekSvgWrap').innerHTML =
+    `<svg width="${totalW}" height="${chartH+24}" style="max-width:100%; display:block;">${svg}</svg>`;
+
+  const countsHtml = days.map(d=>
+    `<div style="width:${colW+gap}px; display:flex; flex-direction:column; align-items:center; gap:3px;">
+      <div style="display:flex; align-items:center; gap:3px;">
+        <span style="width:7px; height:7px; border-radius:50%; background:var(--sleep); display:inline-block;"></span>
+        <span style="font-size:11px; color:var(--ink); font-weight:600;">${napCounts[d]}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:3px;">
+        <span style="width:7px; height:7px; border-radius:50%; background:var(--food); display:inline-block;"></span>
+        <span style="font-size:11px; color:var(--ink); font-weight:600;">${feedCounts[d]}</span>
+      </div>
+    </div>`
+  ).join('');
+  document.getElementById('weekCounts').innerHTML =
+    `<div style="display:flex; margin-top:6px; width:${totalW}px;">
+      <div style="width:${leftPad}px; flex-shrink:0;"></div>
+      ${countsHtml}
+    </div>`;
+}
+
+function renderSince(){
+  const lastNap = entriesCache.find(e=>e.type==='sleep' && e.end);
+  const openNap = entriesCache.find(e=>e.type==='sleep' && !e.end);
+  const lastFeed = entriesCache.find(e=>e.type==='food');
+
+  let napText;
+  if(openNap) napText = 'Sover nu';
+  else if(lastNap) napText = fmtDur(Date.now()-new Date(lastNap.end).getTime())+' siden';
+  else napText = '—';
+
+  let feedText = lastFeed ? fmtDur(Date.now()-new Date(lastFeed.time).getTime())+' siden' : '—';
+
+  document.getElementById('sinceSummary').innerHTML = `
+    <div class="stat"><div class="n">${napText}</div><div class="l">Siden sidste lur</div></div>
+    <div class="stat"><div class="n">${feedText}</div><div class="l">Siden sidste måltid</div></div>
+  `;
+}
+setInterval(renderSince, 30000);
+
+init();
+renderQuote();
+</script>
+</body>
+</html>
