@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "entries": {
+      ".read": true,
+      ".write": true
+    },
+    "familie": {
+      ".read": "auth != null && auth.token.email_verified == true && (auth.token.email == 'lassetopbjerg@gmail.com' || auth.token.email == 'idaholtpedersen@gmail.com')",
+      ".write": "auth != null && auth.token.email_verified == true && (auth.token.email == 'lassetopbjerg@gmail.com' || auth.token.email == 'idaholtpedersen@gmail.com')"
+    }
+  }
+}
