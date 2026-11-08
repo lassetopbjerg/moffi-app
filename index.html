@@ -253,10 +253,6 @@ body.night .logo .closed{display:inline}
 
   <!-- ============ I DAG ============ -->
   <div id="viewToday" class="app-view" style="display:flex;flex-direction:column;gap:14px">
-    <section class="scene" aria-label="Himlen over Vistoft lige nu">
-      <canvas id="scene" aria-hidden="true"></canvas>
-      <div class="scene-cap"><b id="sceneTitle"></b><span id="sceneWx"></span></div>
-    </section>
 
     <div id="awake" style="display:flex;flex-direction:column;gap:14px">
       <section class="card dial-card">
@@ -316,6 +312,10 @@ body.night .logo .closed{display:inline}
         <span class="chev2" aria-hidden="true"></span>
       </button>
       <div id="history" hidden><p class="empty">Indlæser…</p></div>
+    </section>
+    <section class="scene" aria-label="Himlen over Vistoft lige nu">
+      <canvas id="scene" aria-hidden="true"></canvas>
+      <div class="scene-cap"><b id="sceneTitle"></b><span id="sceneWx"></span></div>
     </section>
     <figure class="quote quiet" id="quoteDay"><blockquote></blockquote><figcaption></figcaption></figure>
   </div>
@@ -922,7 +922,7 @@ const Scene=(()=>{
     if(ov.month){now=new Date(real);now.setMonth(ov.month[0],ov.month[1])}
     const sol=solar(now);
     let rise=sol.rise,set=sol.set;
-    if(wx&&wx.rise&&wx.set&&!ov.month&&wx.day===toLocalInput(real.toISOString()).slice(0,10)){rise=new Date(wx.rise);set=new Date(wx.set)}
+    if(wx&&wx.rise&&wx.set&&!ov.month&&wx.day===toLocalInput(real.toISOString()).slice(0,10)){const r=new Date(wx.rise),st=new Date(wx.set);if(!isNaN(r)&&!isNaN(st)&&st>r){rise=r;set=st}}
     if(ov.phase){
       const pick={morning:rise.getTime()+40*60000,day:(rise.getTime()+set.getTime())/2,dusk:set.getTime()+12*60000,night:startOfDay(now).getTime()+23*36e5}[ov.phase];
       now=new Date(pick);
