@@ -366,6 +366,14 @@ body.night .logo .closed{display:inline}
         Fast føde
       </button>
     </div>
+    <div class="grp" id="solidKinds" hidden>
+      <span class="lbl">Hvad</span>
+      <div class="chips" role="group" aria-label="Hvad">
+        <button class="chip" type="button" data-dish="Mos" aria-pressed="false">Mos</button>
+        <button class="chip" type="button" data-dish="Grød" aria-pressed="false">Grød</button>
+        <button class="chip" type="button" data-dish="Brød" aria-pressed="false">Brød</button>
+      </div>
+    </div>
     <div class="grp">
       <span class="lbl">Hvornår</span>
       <div class="chips" role="group" aria-label="Hvornår">
@@ -499,6 +507,7 @@ const fbDb=firebase.database();
 const entriesRef=fbDb.ref('entries');
 let entries=[],loaded=false;
 const timeOf=e=>e.type==='sleep'?e.start:e.time;
+const foodLabel=e=>[FOOD_LABELS[e.foodType]||e.foodType||'Måltid',e.dish,e.amount].filter(Boolean).join(' · ');
 const openSleep=()=>entries.find(e=>e.type==='sleep'&&e.start&&!e.end);
 
 entriesRef.orderByChild('createdAt').limitToLast(300).on('value',snap=>{
@@ -608,7 +617,7 @@ function rowFor(e){
     if(e.end){const ms=new Date(e.end)-new Date(e.start);main=(ms>=4*36e5?'Nattesøvn':'Lur')+' · '+fmtDur(ms);sub='til '+clock(e.end)+(sameDay(e.start,e.end)?'':' næste dag')}
     else{main='Sover nu';sub='siden '+clock(e.start)}
   }else if(e.type==='pyt'){kind='pyt';icon='pyt';main='PYT';sub=''}
-  else{kind='food';icon=e.foodType==='Solid'?'Solid':'Bottle';main=(FOOD_LABELS[e.foodType]||e.foodType||'Måltid')+(e.amount?' · '+e.amount:'');sub=e.note||''}
+  else{kind='food';icon=e.foodType==='Solid'?'Solid':'Bottle';main=foodLabel(e);sub=e.note||''}
   return h('button',{class:'row',type:'button','aria-label':'Ret: '+main,onclick:()=>openEdit(e.id)},
     h('span',{class:'t'},clock(timeOf(e))),
     h('span',{class:'tile '+kind,html:svgIcon(icon)}),
@@ -665,7 +674,7 @@ function renderWeek(){
     if(st){
       if(isToday)bar.append(h('span',{class:'rest',style:'left:'+pct(now.getTime()).toFixed(2)+'%'}));
       for(const g of st.segs)bar.append(h('button',{class:'seg',type:'button',style:'left:'+pct(g.a).toFixed(2)+'%;width:'+(pct(g.b)-pct(g.a)).toFixed(2)+'%','aria-label':'Søvn '+clock(g.s)+'–'+clock(g.en),onclick:ev=>showTip(ev,clock(g.s)+'–'+(g.en>=now.getTime()&&!entries.find(e=>e.type==='sleep'&&new Date(e.start).getTime()===g.s&&e.end)?'nu':clock(g.en))+' · '+fmtDur(g.en-g.s))}));
-      for(const f of st.feeds){const lbl=(FOOD_LABELS[f.foodType]||'Måltid')+(f.amount?' '+f.amount:'')+' · '+clock(f.time);bar.append(h('button',{class:'fd',type:'button',style:'left:'+pct(new Date(f.time).getTime()).toFixed(2)+'%','aria-label':lbl,onclick:ev=>showTip(ev,lbl)}))}
+      for(const f of st.feeds){const lbl=foodLabel(f)+' · '+clock(f.time);bar.append(h('button',{class:'fd',type:'button',style:'left:'+pct(new Date(f.time).getTime()).toFixed(2)+'%','aria-label':lbl,onclick:ev=>showTip(ev,lbl)}))}
     }
     rows.push(h('div',{class:'wk-row'+(isToday?' today':'')+(future?' future':'')},
       h('div',{class:'wk-day'},h('span',null,DS[day.getDay()]),h('b',null,String(day.getDate()))),
@@ -721,23 +730,26 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheets()});
 const press=(sel,match)=>document.querySelectorAll(sel).forEach(b=>b.setAttribute('aria-pressed',String(match(b))));
 
 /* log meal */
-const food={type:'Bottle',when:'0',amt:null};
+const food={type:'Bottle',when:'0',amt:null,dish:null};
 function syncFood(){
   press('[data-type]',b=>b.dataset.type===food.type);
   press('[data-when]',b=>b.dataset.when===food.when);
   press('[data-amt]',b=>b.dataset.amt===food.amt);
+  press('[data-dish]',b=>b.dataset.dish===food.dish);
+  $('solidKinds').hidden=food.type!=='Solid';
   $('foodTime').hidden=food.when!=='custom';
   $('amtBottle').hidden=food.type!=='Bottle';
   $('amtFree').hidden=!(food.type==='Solid'||food.amt==='custom');
   $('whenNow').textContent='Nu · '+clock(new Date());
 }
 function openFood(){
-  food.type='Bottle';food.when='0';food.amt=null;
+  food.type='Bottle';food.when='0';food.amt=null;food.dish=null;
   $('foodAmount').value='';$('foodNote').value='';$('foodTime').value=toLocalInput(new Date().toISOString());
   syncFood();openSheet('foodSheet');
 }
 $('openFood').onclick=openFood;$('openFood2').onclick=openFood;
 document.querySelectorAll('[data-type]').forEach(b=>b.onclick=()=>{food.type=b.dataset.type;if(food.type==='Solid')food.amt=null;syncFood()});
+document.querySelectorAll('[data-dish]').forEach(b=>b.onclick=()=>{food.dish=food.dish===b.dataset.dish?null:b.dataset.dish;syncFood()});
 document.querySelectorAll('[data-when]').forEach(b=>b.onclick=()=>{food.when=b.dataset.when;syncFood();if(food.when==='custom')$('foodTime').focus()});
 document.querySelectorAll('[data-amt]').forEach(b=>b.onclick=()=>{food.amt=food.amt===b.dataset.amt?null:b.dataset.amt;syncFood();if(food.amt==='custom')$('foodAmount').focus()});
 $('foodForm').addEventListener('submit',async ev=>{
@@ -748,7 +760,7 @@ $('foodForm').addEventListener('submit',async ev=>{
   const amount=food.type==='Bottle'&&food.amt&&food.amt!=='custom'?food.amt:$('foodAmount').value.trim();
   const note=$('foodNote').value.trim();
   $('foodSave').disabled=true;
-  const ok=await save(()=>entriesRef.push({type:'food',foodType:food.type,amount,note,time,createdAt:Date.now()}),'Måltid gemt');
+  const ok=await save(()=>entriesRef.push(Object.assign({type:'food',foodType:food.type,amount,note,time,createdAt:Date.now()},food.type==='Solid'&&food.dish?{dish:food.dish}:{})),'Måltid gemt');
   $('foodSave').disabled=false;
   if(ok)closeSheets();
 });
@@ -768,7 +780,7 @@ function openEdit(id){
   tile.style.cssText='width:44px;height:44px;border-radius:14px';
   const d=new Date(timeOf(e));
   $('editTitle').textContent=isSleep?(e.end?'Ret lur':'Ret starttid'):isFood?'Ret måltid':'PYT';
-  $('editSub').textContent=DAYS[d.getDay()].replace(/^./,c=>c.toUpperCase())+' '+d.getDate()+'. '+MONTHS[d.getMonth()]+(isFood&&(e.amount||e.note)?' · '+[FOOD_LABELS[e.foodType]||'',e.amount,e.note].filter(Boolean).join(' · '):'');
+  $('editSub').textContent=DAYS[d.getDay()].replace(/^./,c=>c.toUpperCase())+' '+d.getDate()+'. '+MONTHS[d.getMonth()]+(isFood?' · '+[foodLabel(e),e.note].filter(Boolean).join(' · '):'');
   $('editSleepFields').hidden=!isSleep;$('editDur').hidden=!isSleep;$('editHint').hidden=!isSleep;
   $('editFoodFields').hidden=!isFood;$('editSave').hidden=!(isSleep||isFood);
   $('editBtns').style.gridTemplateColumns=(isSleep||isFood)?'':'1fr';
