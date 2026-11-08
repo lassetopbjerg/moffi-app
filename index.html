@@ -538,20 +538,43 @@ async function save(fn,okMsg){
 
 /* ---------- quotes ---------- */
 const QUOTES=[
-  {text:"Everything that irritates us about others can lead us to an understanding of ourselves.",author:"C.G. Jung",source:"Memories, Dreams, Reflections (1961), p. 247"},
-  {text:"How can I be substantial if I do not cast a shadow?",author:"C.G. Jung",source:"Aion, CW 9ii (1951), p. 14"},
-  {text:"Who looks outside, dreams; who looks inside, awakes.",author:"C.G. Jung",source:"Letter to Fanny Bowditch, 22 Oct 1916"},
-  {text:"We cannot change anything unless we accept it. Condemnation does not liberate; it oppresses.",author:"C.G. Jung",source:"Modern Man in Search of a Soul (1933), pp. 234–235"},
-  {text:"In each of us there is another whom we do not know.",author:"C.G. Jung",source:"New Paths in Psychology, CW 7 (1912)"},
-  {text:"Meaninglessness inhibits fullness of life and is therefore equivalent to illness.",author:"C.G. Jung",source:"Memories, Dreams, Reflections (1961), p. 340"},
+  {text:"Trust yourself. You know more than you think you do.",author:"Benjamin Spock",source:"Baby and Child Care (1946)"},
   {text:"There is no such thing as a baby, there is a baby and someone.",author:"D.W. Winnicott",source:"The Theory of the Parent-Infant Relationship (1960)"},
-  {text:"The shoe that fits one person pinches another.",author:"C.G. Jung",source:"Modern Man in Search of a Soul (1933), pp. 60–61"}
+  {text:"Leve er ikke nok, sagde sommerfuglen. Solskin, frihed og en lille blomst må man have!",author:"H.C. Andersen",source:"Sommerfuglen (1861)"},
+  {text:"Livet forstås baglæns, men må leves forlæns.",author:"Søren Kierkegaard",source:"frit efter Journalen JJ (1843)"},
+  {text:"I know of a cure for everything: salt water … sweat, or tears, or the salt sea.",author:"Karen Blixen",source:"The Deluge at Norderney, Seven Gothic Tales (1934)"},
+  {text:"Sleep that knits up the ravell'd sleave of care.",author:"William Shakespeare",source:"Macbeth, 2. akt (1606)"},
+  {text:"One cannot think well, love well, sleep well, if one has not dined well.",author:"Virginia Woolf",source:"A Room of One's Own (1929)"},
+  {text:"Your children are not your children. They are the sons and daughters of Life's longing for itself.",author:"Kahlil Gibran",source:"The Prophet (1923)"},
+  {text:"Making the decision to have a child is momentous. It is to decide forever to have your heart go walking around outside your body.",author:"Elizabeth Stone",source:"forfatter og lærer"},
+  {text:"People who say they sleep like a baby usually don't have one.",author:"Leo J. Burke",source:"tilskrevet"},
+  {text:"A journey of a thousand miles begins with a single step.",author:"Lao Tzu",source:"Tao Te Ching, kap. 64"},
+  {text:"Very little indeed is necessary for living a happy life.",author:"Marcus Aurelius",source:"Meditationer 7.67"},
+  {text:"While we are postponing, life speeds by.",author:"Seneca",source:"Breve til Lucilius, brev 1"},
+  {text:"Be patient toward all that is unsolved in your heart and try to love the questions themselves.",author:"Rainer Maria Rilke",source:"Breve til en ung digter (1903)"},
+  {text:"There is no greater agony than bearing an untold story inside you.",author:"Maya Angelou",source:"I Know Why the Caged Bird Sings (1969)"},
+  {text:"Anything that's human is mentionable, and anything that is mentionable can be more manageable.",author:"Fred Rogers",source:"Mister Rogers' Neighborhood"},
+  {text:"All happy families are alike; each unhappy family is unhappy in its own way.",author:"Leo Tolstoj",source:"Anna Karenina (1877)"},
+  {text:"How wonderful it is that nobody need wait a single moment before starting to improve the world.",author:"Anne Frank",source:"Give! (1944)"},
+  {text:"Everything can be taken from a man but one thing: the last of the human freedoms – to choose one's attitude in any given set of circumstances.",author:"Viktor Frankl",source:"Man's Search for Meaning (1946)"},
+  {text:"Early to bed and early to rise, makes a man healthy, wealthy, and wise.",author:"Benjamin Franklin",source:"Poor Richard's Almanack (1735)"},
+  {text:"Well begun is half done.",author:"Gammelt ordsprog",source:"citeret af Aristoteles i Politikken"},
+  {text:"Who looks outside, dreams; who looks inside, awakes.",author:"C.G. Jung",source:"brev til Fanny Bowditch (1916)"},
+  {text:"In each of us there is another whom we do not know.",author:"C.G. Jung",source:"New Paths in Psychology (1912)"},
+  {text:"We cannot change anything unless we accept it.",author:"C.G. Jung",source:"Modern Man in Search of a Soul (1933)"}
 ];
+let quoteShift=0;
 function renderQuote(){
-  const n=new Date(),doy=Math.floor((n-new Date(n.getFullYear(),0,0))/864e5),q=QUOTES[doy%QUOTES.length];
+  const n=new Date(),doy=Math.floor((n-new Date(n.getFullYear(),0,0))/864e5),q=QUOTES[(doy+quoteShift)%QUOTES.length];
   for(const id of ['quoteNight','quoteDay']){
-    const f=$(id);f.querySelector('blockquote').textContent='“'+q.text+'”';f.querySelector('figcaption').textContent=q.author+', '+q.source;
+    const f=$(id);f.querySelector('blockquote').textContent='“'+q.text+'”';f.querySelector('figcaption').textContent=q.author+' · '+q.source;
   }
+}
+for(const id of ['quoteNight','quoteDay']){
+  const f=$(id);f.style.cursor='pointer';f.title='Tryk for et nyt citat';
+  f.tabIndex=0;f.setAttribute('role','button');f.setAttribute('aria-label','Dagens citat. Tryk for et nyt citat');
+  f.addEventListener('click',()=>{quoteShift++;renderQuote()});
+  f.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();quoteShift++;renderQuote()}});
 }
 
 /* ---------- today ---------- */
