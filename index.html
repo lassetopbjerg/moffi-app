@@ -187,7 +187,7 @@ body.night .logo .closed{display:inline}
 .chip{height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink);font-weight:700}
 .chip.more{border-style:dashed;color:var(--sleep)}
-.amts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.amts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .amt{height:48px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
 .amt[aria-pressed="true"]{border:2px solid var(--food);background:var(--foodTint);font-weight:700}
 .amt.more{border-style:dashed;color:var(--sleep)}
@@ -379,6 +379,8 @@ body.night .logo .closed{display:inline}
     <div class="grp" id="amtBottle">
       <span class="lbl">Mængde</span>
       <div class="amts" role="group" aria-label="Mængde i ml">
+        <button class="amt" type="button" data-amt="40 ml" aria-pressed="false">40</button>
+        <button class="amt" type="button" data-amt="60 ml" aria-pressed="false">60</button>
         <button class="amt" type="button" data-amt="80 ml" aria-pressed="false">80</button>
         <button class="amt" type="button" data-amt="110 ml" aria-pressed="false">110</button>
         <button class="amt" type="button" data-amt="140 ml" aria-pressed="false">140</button>
