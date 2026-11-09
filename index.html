@@ -168,7 +168,7 @@ body.night .logo .closed{display:inline}
 .wk-tot span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);padding:8px 0 0 50px}
 .legend span{display:inline-flex;align-items:center;gap:6px}
-.avgs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.avgs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .avg{background:var(--surface);border-radius:18px;padding:12px 10px;display:flex;flex-direction:column;gap:2px}
 .avg b{font:700 20px var(--display);font-variant-numeric:tabular-nums}
 .avg span{font-size:12px;color:var(--muted)}
@@ -348,7 +348,7 @@ body.night .logo .closed{display:inline}
       <div class="wk-row" style="min-height:18px">
         <span></span>
         <div class="axis"><span style="left:0">00</span><span style="left:25%">06</span><span style="left:50%">12</span><span style="left:75%">18</span><span style="left:100%">24</span></div>
-        <span class="hint" style="text-align:right;font-weight:600">lur · mad</span>
+        <span class="hint" style="text-align:right;font-weight:600">lur · flaske</span>
       </div>
       <div id="wkRows"></div>
       <div class="legend">
@@ -358,9 +358,10 @@ body.night .logo .closed{display:inline}
       </div>
     </section>
     <div class="avgs">
-      <div class="avg"><b id="aSleep">–</b><span>lurtid pr. dag</span></div>
       <div class="avg"><b id="aNaps">–</b><span>lure pr. dag</span></div>
-      <div class="avg"><b id="aFeeds">–</b><span>måltider pr. dag</span></div>
+      <div class="avg"><b id="aBottle">–</b><span>flaske pr. dag</span></div>
+      <div class="avg"><b id="aBed">–</b><span>lagt i seng ca.</span></div>
+      <div class="avg"><b id="aWake">–</b><span>vågner ca.</span></div>
     </div>
     <p class="note" id="wkNote"></p>
   </div>
@@ -734,7 +735,29 @@ function dayStats(day,now){
     if(s>=a0&&s<a0+864e5&&isNap(e,now)){naps++;napMs+=napLen(e,now)}
   }
   const feeds=entries.filter(e=>e.type==='food'&&new Date(e.time).getTime()>=a0&&new Date(e.time).getTime()<a0+864e5);
-  return{segs,napMs,naps,feeds};
+  const ml=feeds.reduce((t,f)=>t+bottleMl(f),0);
+  return{segs,napMs,naps,feeds,ml};
+}
+/* ml in a bottle entry, 0 if not a bottle or no number */
+function bottleMl(f){if(f.foodType!=='Bottle')return 0;const m=String(f.amount||'').match(/(\d+(?:[.,]\d+)?)/);return m?Math.round(parseFloat(m[1].replace(',','.'))):0}
+/* night sleep = any sleep that is not a nap. Bedtime: first night start from 17:00 that evening to 03:00.
+   Wake: last night end that morning between 04:00 and 12:00. */
+function bedtimeOn(day,now){
+  const a=day.getTime()+17*36e5,b=day.getTime()+27*36e5;let best=null;
+  for(const e of entries){if(e.type!=='sleep'||isNap(e,now))continue;const s=new Date(e.start).getTime();if(s>=a&&s<b&&(best===null||s<best))best=s}
+  return best;
+}
+function wakeOn(day,now){
+  const a=day.getTime()+4*36e5,b=day.getTime()+12*36e5;let best=null;
+  for(const e of entries){if(e.type!=='sleep'||!e.end||isNap(e,now))continue;const t=new Date(e.end).getTime();if(t>=a&&t<b&&(best===null||t>best))best=t}
+  return best;
+}
+/* average clock time; minutes counted from `from` o'clock so times around midnight average correctly */
+function avgClock(times,from){
+  if(!times.length)return'–';
+  const m=times.map(t=>{const d=new Date(t);return((d.getHours()-from+24)%24)*60+d.getMinutes()});
+  const avg=Math.round(m.reduce((x,y)=>x+y,0)/m.length/5)*5,tot=(avg+from*60)%1440;
+  return pad(Math.floor(tot/60))+':'+pad(tot%60);
 }
 function renderWeek(){
   const now=new Date(),ws=weekStart(weekOffset),we=addDays(ws,6);
@@ -754,17 +777,19 @@ function renderWeek(){
     rows.push(h('div',{class:'wk-row'+(isToday?' today':'')+(future?' future':'')},
       h('div',{class:'wk-day'},h('span',null,DS[day.getDay()]),h('b',null,String(day.getDate()))),
       bar,
-      h('div',{class:'wk-tot'},h('b',null,st?fmtDur(st.napMs):'–'),h('span',null,st?st.feeds.length+(st.feeds.length===1?' måltid':' måltider'):''))));
+      h('div',{class:'wk-tot'},h('b',null,st?fmtDur(st.napMs):'–'),h('span',null,st?(st.ml?st.ml+' ml':'–'):''))));
   }
   $('wkRows').replaceChildren(...rows);
   /* averages: the last 7 whole days, longest nap: the week shown */
-  const today0=startOfDay(now);let sl=0,np=0,fd=0,n=0;
-  for(let i=1;i<=7;i++){const d=addDays(today0,-i),st=dayStats(d,now);if(!st.segs.length&&!st.feeds.length)continue;sl+=st.napMs;np+=st.naps;fd+=st.feeds.length;n++}
-  $('aSleep').textContent=n?fmtDur(sl/n):'–';$('aNaps').textContent=n?comma(np/n):'–';$('aFeeds').textContent=n?comma(fd/n):'–';
+  const today0=startOfDay(now);let sl=0,np=0,ml=0,n=0,mn=0;const beds=[],wakes=[];
+  for(let i=1;i<=7;i++){const d=addDays(today0,-i),st=dayStats(d,now);if(!st.segs.length&&!st.feeds.length)continue;sl+=st.napMs;np+=st.naps;n++;if(st.ml){ml+=st.ml;mn++}}
+  for(let i=0;i<=7;i++){const d=addDays(today0,-i),b=bedtimeOn(d,now),w=wakeOn(d,now);if(b!==null&&beds.length<7)beds.push(b);if(w!==null&&wakes.length<7)wakes.push(w)}
+  $('aNaps').textContent=n?comma(np/n):'–';$('aBottle').textContent=mn?Math.round(ml/mn/10)*10+' ml':'–';
+  $('aBed').textContent=avgClock(beds,12);$('aWake').textContent=avgClock(wakes,0);
   let best=null;
   for(const e of entries){if(e.type!=='sleep'||!e.end)continue;const s=new Date(e.start),len=new Date(e.end)-s;if(s<ws||s>=addDays(ws,7)||len>=4*36e5)continue;if(!best||len>best.len)best={s,e:new Date(e.end),len}}
   const note=$('wkNote');
-  note.replaceChildren('Gennemsnit for de seneste 7 hele dage.',best?' Længste lur i ugen: ':'',best?h('b',null,DS[best.s.getDay()]+' '+clock(best.s)+'–'+clock(best.e)+' · '+fmtDur(best.len)):'');
+  note.replaceChildren('Gennemsnit for de seneste 7 dage og nætter.'+(n?' Lurtid i snit: '+fmtDur(sl/n)+' pr. dag.':''),best?' Længste lur i ugen: ':'',best?h('b',null,DS[best.s.getDay()]+' '+clock(best.s)+'–'+clock(best.e)+' · '+fmtDur(best.len)):'');
 }
 $('wkPrev').onclick=()=>{weekOffset--;renderWeek()};
 $('wkNext').onclick=()=>{if(weekOffset<0){weekOffset++;renderWeek()}};
