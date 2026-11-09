@@ -101,6 +101,13 @@ body.night .logo .closed{display:inline}
 .asleep .when{font-size:16px;margin-top:6px}
 .asleep .ctx{font-size:14px;color:var(--muted)}
 .asleep .btn{width:100%;height:60px;font-size:17px;border-radius:20px;margin-top:8px}
+.lastfeed{width:100%;margin-top:8px;padding:12px;border-radius:20px;background:var(--surface);display:flex;flex-direction:column;gap:10px}
+.lf-info{width:100%;min-height:44px;padding:4px;border:0;border-radius:12px;background:transparent;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:2px}
+.lf-info .label{color:var(--muted)}
+.lf-ago{font:700 30px/1.15 var(--display);font-variant-numeric:tabular-nums}
+.lf-sub{font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.lf-sub u{text-underline-offset:2px}
+.asleep .lastfeed .btn{margin-top:0}
 .links{display:flex;gap:6px;justify-content:center}
 .linkbtn{border:0;background:transparent;color:var(--muted);font-weight:600;font-size:14px;padding:10px 12px;border-radius:10px}
 .linkbtn:hover{color:var(--ink)}
@@ -265,7 +272,7 @@ body.night .logo .closed{display:inline}
           </div>
         </div>
         <div class="minis">
-          <div class="mini"><b><i class="sw"></i><span id="mSleep">–</span></b><span>søvn i dag</span></div>
+          <div class="mini"><b><i class="sw"></i><span id="mSleep">–</span></b><span>lur i dag</span></div>
           <div class="mini"><b><i class="sw dot"></i><span id="mFeeds">–</span></b><span>måltider i dag</span></div>
           <div class="mini"><b id="mSinceFeed">–</b><span>siden måltid</span></div>
         </div>
@@ -294,13 +301,24 @@ body.night .logo .closed{display:inline}
         </div>
         <p class="when">Faldt i søvn kl. <b id="napStart" style="font-variant-numeric:tabular-nums">–</b></p>
         <p class="ctx" id="napCtx"></p>
+        <div class="lastfeed">
+          <button class="lf-info" id="lastFeedEdit" type="button">
+            <span class="label">Sidste måltid</span>
+            <b class="lf-ago" id="lfAgo">–</b>
+            <span class="lf-sub"><span id="lfSub"></span><span id="lfEdit" hidden> · <u>Ret</u></span></span>
+          </button>
+          <button class="btn food" id="quickFeed" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2h6M10 2v3L8 8v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V8l-2-3V2M8 12h8"/></svg>
+            Log flaske nu
+          </button>
+        </div>
         <button class="btn sleep" id="endNap" type="button">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
           Ubbe er vågnet
         </button>
         <div class="links">
           <button class="linkbtn" id="fixStart" type="button">Ret starttid</button>
-          <button class="linkbtn" id="openFood2" type="button">Log måltid</button>
+          <button class="linkbtn" id="openFood2" type="button">Andet måltid</button>
         </div>
       </section>
       <figure class="quote" id="quoteNight"><span class="label">Dagens citat</span><blockquote></blockquote><figcaption></figcaption></figure>
@@ -331,7 +349,7 @@ body.night .logo .closed{display:inline}
       <div class="wk-row" style="min-height:18px">
         <span></span>
         <div class="axis"><span style="left:0">00</span><span style="left:25%">06</span><span style="left:50%">12</span><span style="left:75%">18</span><span style="left:100%">24</span></div>
-        <span class="hint" style="text-align:right;font-weight:600">søvn · mad</span>
+        <span class="hint" style="text-align:right;font-weight:600">lur · mad</span>
       </div>
       <div id="wkRows"></div>
       <div class="legend">
@@ -341,7 +359,7 @@ body.night .logo .closed{display:inline}
       </div>
     </section>
     <div class="avgs">
-      <div class="avg"><b id="aSleep">–</b><span>søvn pr. døgn</span></div>
+      <div class="avg"><b id="aSleep">–</b><span>lurtid pr. dag</span></div>
       <div class="avg"><b id="aNaps">–</b><span>lure pr. dag</span></div>
       <div class="avg"><b id="aFeeds">–</b><span>måltider pr. dag</span></div>
     </div>
@@ -518,6 +536,9 @@ let entries=[],loaded=false;
 const timeOf=e=>e.type==='sleep'?e.start:e.time;
 const foodLabel=e=>[FOOD_LABELS[e.foodType]||e.foodType||'Måltid',e.dish,e.amount].filter(Boolean).join(' · ');
 const openSleep=()=>entries.find(e=>e.type==='sleep'&&e.start&&!e.end);
+/* a nap starts between 05 and 18 and lasts under 4 hours; everything else is night sleep */
+const napLen=(e,now)=>(e.end?new Date(e.end):now)-new Date(e.start);
+const isNap=(e,now)=>{if(e.type!=='sleep')return false;const hh=new Date(e.start).getHours();return hh>=5&&hh<18&&napLen(e,now)<4*36e5};
 
 entriesRef.orderByChild('createdAt').limitToLast(300).on('value',snap=>{
   const arr=[];snap.forEach(c=>{arr.push({id:c.key,...c.val()})});
@@ -599,10 +620,21 @@ function dialSvg(now){
   [['00',124,46],['06',204,128],['12',124,210],['18',44,128]].forEach(([l,x,y])=>{s+='<text x="'+x+'" y="'+y+'" text-anchor="middle" font-size="11" font-weight="600" fill="var(--muted)" font-family="Figtree, sans-serif">'+l+'</text>'});
   return s+'</svg>';
 }
-function sleepTodayMs(now){
-  const mid=startOfDay(now).getTime(),t=now.getTime();let sum=0;
-  for(const e of entries)if(e.type==='sleep'){const a=Math.max(new Date(e.start).getTime(),mid),b=Math.min(e.end?new Date(e.end).getTime():t,t);if(b>a)sum+=b-a}
+function napMsOn(day,now){
+  let sum=0;
+  for(const e of entries)if(isNap(e,now)&&sameDay(e.start,day))sum+=napLen(e,now);
   return sum;
+}
+const lastFeedEntry=now=>entries.find(e=>e.type==='food'&&new Date(e.time)<=now);
+function renderLastFeed(now){
+  const last=lastFeedEntry(now);
+  $('lastFeedEdit').disabled=!last;
+  $('lfEdit').hidden=!last;
+  if(!last){$('lfAgo').textContent=loaded?'Intet endnu':'–';$('lfSub').textContent='';return}
+  const t=new Date(last.time),ms=now-t;
+  const day=sameDay(t,now)?'':sameDay(t,addDays(now,-1))?' i går':' den '+t.getDate()+'/'+(t.getMonth()+1);
+  $('lfAgo').textContent=ms<60000?'Lige nu':fmtDur(ms)+' siden';
+  $('lfSub').textContent='kl. '+clock(t)+day+' · '+foodLabel(last);
 }
 function renderToday(){
   const now=new Date(),open=openSleep();
@@ -618,9 +650,11 @@ function renderToday(){
     const big=$('napBig');
     if(m<60)big.replaceChildren(String(m),h('small',null,'min'));else big.replaceChildren(Math.floor(m/60)+'t '+pad(m%60)+'m');
     $('napStart').textContent=clock(open.start);
+    renderLastFeed(now);
     const st=new Date(open.start),hh=st.getHours();
     const naps=entries.filter(e=>e.type==='sleep'&&sameDay(e.start,now)&&new Date(e.start).getHours()>=5&&new Date(e.start).getHours()<18).length;
-    $('napCtx').textContent=(hh>=18||hh<5?'Nattesøvn':'Dagens '+Math.max(1,naps)+'. lur')+' · '+fmtDur(sleepTodayMs(now))+' søvn i dag';
+    const napMs=napMsOn(now,now);
+    $('napCtx').textContent=(hh>=18||hh<5?'Nattesøvn':'Dagens '+Math.max(1,naps)+'. lur')+(napMs?' · '+fmtDur(napMs)+' lur i dag':'');
     const frac=(ms%36e5)/36e5,r2=104,c2=2*Math.PI*r2;
     $('ringSvg').innerHTML='<svg width="236" height="236" viewBox="0 0 236 236" aria-hidden="true"><circle cx="118" cy="118" r="'+r2+'" fill="none" stroke="var(--track)" stroke-width="10"/><circle cx="118" cy="118" r="'+r2+'" fill="none" stroke="var(--sleep)" stroke-width="10" stroke-linecap="round" stroke-dasharray="'+Math.max(1,frac*c2).toFixed(1)+' '+c2.toFixed(1)+'" transform="rotate(-90 118 118)"/><circle cx="118" cy="118" r="80" fill="var(--surface)" opacity=".55"/></svg>';
     return;
@@ -630,7 +664,7 @@ function renderToday(){
   if(lastEnd){$('dialLabel').textContent='Vågen';$('dialBig').textContent=fmtDur(now-lastEnd);$('dialSub').textContent='siden lur kl. '+clock(lastEnd)+(sameDay(lastEnd,now)?'':' i går')}
   else{$('dialLabel').textContent='Vågen';$('dialBig').textContent='–';$('dialSub').textContent=loaded?'ingen lure endnu':''}
   const mid=startOfDay(now);
-  $('mSleep').textContent=fmtDur(sleepTodayMs(now));
+  $('mSleep').textContent=fmtDur(napMsOn(now,now));
   $('mFeeds').textContent=String(feeds.filter(e=>new Date(e.time)>=mid&&new Date(e.time)<=now).length);
   $('mSinceFeed').textContent=lastFeed?fmtDur(now-new Date(lastFeed.time)):'–';
 }
@@ -692,16 +726,16 @@ function showTip(ev,text){
 document.addEventListener('click',()=>{$('tip').hidden=true});
 function dayStats(day,now){
   const a0=day.getTime(),b0=Math.min(addDays(day,1).getTime(),now.getTime());
-  const segs=[];let total=0,naps=0;
+  const segs=[];let napMs=0,naps=0;
   for(const e of entries){
     if(e.type!=='sleep')continue;
     const s=new Date(e.start).getTime(),en=e.end?new Date(e.end).getTime():now.getTime();
     const a=Math.max(s,a0),b=Math.min(en,b0);
-    if(b>a){segs.push({a,b,s,en});total+=b-a}
-    if(s>=a0&&s<a0+864e5&&(en-s)<4*36e5){const hh=new Date(s).getHours();if(hh>=5&&hh<19)naps++}
+    if(b>a)segs.push({a,b,s,en});
+    if(s>=a0&&s<a0+864e5&&isNap(e,now)){naps++;napMs+=napLen(e,now)}
   }
   const feeds=entries.filter(e=>e.type==='food'&&new Date(e.time).getTime()>=a0&&new Date(e.time).getTime()<a0+864e5);
-  return{segs,total,naps,feeds};
+  return{segs,napMs,naps,feeds};
 }
 function renderWeek(){
   const now=new Date(),ws=weekStart(weekOffset),we=addDays(ws,6);
@@ -721,12 +755,12 @@ function renderWeek(){
     rows.push(h('div',{class:'wk-row'+(isToday?' today':'')+(future?' future':'')},
       h('div',{class:'wk-day'},h('span',null,DS[day.getDay()]),h('b',null,String(day.getDate()))),
       bar,
-      h('div',{class:'wk-tot'},h('b',null,st?fmtDur(st.total):'–'),h('span',null,st?st.feeds.length+(st.feeds.length===1?' måltid':' måltider'):''))));
+      h('div',{class:'wk-tot'},h('b',null,st?fmtDur(st.napMs):'–'),h('span',null,st?st.feeds.length+(st.feeds.length===1?' måltid':' måltider'):''))));
   }
   $('wkRows').replaceChildren(...rows);
   /* averages: the last 7 whole days, longest nap: the week shown */
   const today0=startOfDay(now);let sl=0,np=0,fd=0,n=0;
-  for(let i=1;i<=7;i++){const d=addDays(today0,-i),st=dayStats(d,now);if(!st.segs.length&&!st.feeds.length)continue;sl+=st.total;np+=st.naps;fd+=st.feeds.length;n++}
+  for(let i=1;i<=7;i++){const d=addDays(today0,-i),st=dayStats(d,now);if(!st.segs.length&&!st.feeds.length)continue;sl+=st.napMs;np+=st.naps;fd+=st.feeds.length;n++}
   $('aSleep').textContent=n?fmtDur(sl/n):'–';$('aNaps').textContent=n?comma(np/n):'–';$('aFeeds').textContent=n?comma(fd/n):'–';
   let best=null;
   for(const e of entries){if(e.type!=='sleep'||!e.end)continue;const s=new Date(e.start),len=new Date(e.end)-s;if(s<ws||s>=addDays(ws,7)||len>=4*36e5)continue;if(!best||len>best.len)best={s,e:new Date(e.end),len}}
@@ -762,6 +796,13 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)render()})
 $('startNap').onclick=()=>save(()=>entriesRef.push({type:'sleep',start:new Date().toISOString(),end:null,createdAt:Date.now()}),'Lur startet');
 $('endNap').onclick=()=>{const o=openSleep();if(o)save(()=>entriesRef.child(o.id).update({end:new Date().toISOString()}),'Ubbe sov i '+fmtDur(Date.now()-new Date(o.start)))};
 $('fixStart').onclick=()=>{const o=openSleep();if(o)openEdit(o.id)};
+/* one tap while he sleeps: a bottle, now. The pause stops a double tap from logging two. */
+$('quickFeed').onclick=()=>{
+  const b=$('quickFeed'),time=new Date().toISOString();
+  b.disabled=true;setTimeout(()=>b.disabled=false,2500);
+  save(()=>entriesRef.push({type:'food',foodType:'Bottle',amount:'',note:'',time,createdAt:Date.now()}),'Flaske logget kl. '+clock(time));
+};
+$('lastFeedEdit').onclick=()=>{const l=lastFeedEntry(new Date());if(l)openEdit(l.id)};
 
 /* ---------- sheets ---------- */
 function openSheet(id){$(id).hidden=false;document.body.style.overflow='hidden'}
