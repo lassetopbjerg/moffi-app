@@ -318,7 +318,6 @@ body.night .logo .closed{display:inline}
         </div>
         <div class="links">
           <button class="linkbtn" id="fixStart" type="button">Ret starttid</button>
-          <button class="linkbtn" id="openFood2" type="button">Andet måltid</button>
         </div>
       </section>
       <figure class="quote" id="quoteNight"><span class="label">Dagens citat</span><blockquote></blockquote><figcaption></figcaption></figure>
@@ -796,12 +795,6 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)render()})
 $('startNap').onclick=()=>save(()=>entriesRef.push({type:'sleep',start:new Date().toISOString(),end:null,createdAt:Date.now()}),'Lur startet');
 $('endNap').onclick=()=>{const o=openSleep();if(o)save(()=>entriesRef.child(o.id).update({end:new Date().toISOString()}),'Ubbe sov i '+fmtDur(Date.now()-new Date(o.start)))};
 $('fixStart').onclick=()=>{const o=openSleep();if(o)openEdit(o.id)};
-/* one tap while he sleeps: a bottle, now. The pause stops a double tap from logging two. */
-$('quickFeed').onclick=()=>{
-  const b=$('quickFeed'),time=new Date().toISOString();
-  b.disabled=true;setTimeout(()=>b.disabled=false,2500);
-  save(()=>entriesRef.push({type:'food',foodType:'Bottle',amount:'',note:'',time,createdAt:Date.now()}),'Flaske logget kl. '+clock(time));
-};
 $('lastFeedEdit').onclick=()=>{const l=lastFeedEntry(new Date());if(l)openEdit(l.id)};
 
 /* ---------- sheets ---------- */
@@ -830,7 +823,7 @@ function openFood(){
   $('foodAmount').value='';$('foodNote').value='';$('foodTime').value=toLocalInput(new Date().toISOString());
   syncFood();openSheet('foodSheet');
 }
-$('openFood').onclick=openFood;$('openFood2').onclick=openFood;
+$('openFood').onclick=openFood;$('quickFeed').onclick=openFood;
 document.querySelectorAll('[data-type]').forEach(b=>b.onclick=()=>{food.type=b.dataset.type;if(food.type==='Solid')food.amt=null;syncFood()});
 document.querySelectorAll('[data-dish]').forEach(b=>b.onclick=()=>{food.dish=food.dish===b.dataset.dish?null:b.dataset.dish;syncFood()});
 document.querySelectorAll('[data-when]').forEach(b=>b.onclick=()=>{food.when=b.dataset.when;syncFood();if(food.when==='custom')$('foodTime').focus()});
